@@ -273,6 +273,8 @@ class XEP_0066(xep_0096.FileTransferProtocol):
                 #send the result iq to let the initiator know this client has finished the download
                 iq = self.xmpp.makeIqResult(id=iq_id)
                 iq['to'] = iq["from"]
+                iq['oob_transfer']['url'] = iq['oob_transfer']['url']
+                iq['oob_transfer']['sid'] = iq['oob_transfer']['sid']
                 iq.send(block=False)
                 
                 #Now that we have the file notify xep_0096 so it can run the checksums.
@@ -286,6 +288,8 @@ class XEP_0066(xep_0096.FileTransferProtocol):
                 errIq['to'] = iq['from']
                 if hasattr(ex,'code'): errIq['error']['code'] = ex.code
                 errIq['error']['type'] = 'cancel'
+                errIq['oob_transfer']['url'] = iq['oob_transfer']['url']
+                errIq['oob_transfer']['sid'] = iq['oob_transfer']['sid']
                 errIq.send()
 
         else:
@@ -293,6 +297,8 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             errIq = self.xmpp.makeIqError(id=iq_id, condition='not-acceptable')
             errIq['to'] = iq['from']
             errIq['error']['type'] = 'modify'
+            errIq['oob_transfer']['url'] = iq['oob_transfer']['url']
+            errIq['oob_transfer']['sid'] = iq['oob_transfer']['sid']
             errIq.send()
 
             
