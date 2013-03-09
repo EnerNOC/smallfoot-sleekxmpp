@@ -13,8 +13,7 @@ import urllib2
 from sleekxmpp.stanza import Message, Presence, Iq
 from sleekxmpp.exceptions import XMPPError
 from sleekxmpp.xmlstream import register_stanza_plugin
-from sleekxmpp.xmlstream.handler import Callback, XMLCallback
-from sleekxmpp.xmlstream.matcher.xpath import MatchXPath
+from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 from sleekxmpp.plugins.xep_0066 import stanza
 import sleekxmpp.plugins.xep_0096 as xep_0096
