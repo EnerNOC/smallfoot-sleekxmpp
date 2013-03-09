@@ -222,7 +222,6 @@ class XEP_0066(xep_0096.FileTransferProtocol):
         log.debug('Received out-of-band data request for %s from %s:' % (
             iq['oob_transfer']['url'], iq['from']))
         self._run_url_handler(iq)
-        iq.reply().send()
         
     def _handle_finished(self, iq):
         """
