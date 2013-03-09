@@ -13,7 +13,8 @@ import urllib2
 from sleekxmpp.stanza import Message, Presence, Iq
 from sleekxmpp.exceptions import XMPPError
 from sleekxmpp.xmlstream import register_stanza_plugin
-from sleekxmpp.xmlstream.handler import Callback
+from sleekxmpp.xmlstream.handler import Callback, XMLCallback
+from sleekxmpp.xmlstream.matcher.xpath import MatchXPath
 from sleekxmpp.xmlstream.matcher import StanzaPath
 from sleekxmpp.plugins.xep_0066 import stanza
 import sleekxmpp.plugins.xep_0096 as xep_0096
@@ -271,12 +272,12 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             try:
                 self.http_get(url, saveFileAs)
                 #send the result iq to let the initiator know this client has finished the download
-                iq = self.xmpp.makeIqResult(id=iq_id)
-                iq['to'] = iq["from"]
-                iq['oob_transfer']['url'] = iq['oob_transfer']['url']
-                iq['oob_transfer']['sid'] = iq['oob_transfer']['sid']
-                iq.send(block=False)
-                
+                resp_iq = self.xmpp.makeIqResult(id=iq_id)
+                resp_iq['to'] = iq["from"]
+                resp_iq['oob_transfer']['url'] = iq['oob_transfer']['url']
+                resp_iq['oob_transfer']['sid'] = iq['oob_transfer']['sid']
+                resp_iq.send(block=False)
+
                 #Now that we have the file notify xep_0096 so it can run the checksums.
                 self.fileFinishedReceiving(self.streamSessions[iq_id]['sid'], saveFileAs)
                 del self.streamSessions[iq_id]
@@ -290,7 +291,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
                 errIq['error']['type'] = 'cancel'
                 errIq['oob_transfer']['url'] = iq['oob_transfer']['url']
                 errIq['oob_transfer']['sid'] = iq['oob_transfer']['sid']
-                errIq.send()
+                errIq.send(block=False)
 
         else:
             #failed to download, send back an error iq
@@ -299,7 +300,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             errIq['error']['type'] = 'modify'
             errIq['oob_transfer']['url'] = iq['oob_transfer']['url']
             errIq['oob_transfer']['sid'] = iq['oob_transfer']['sid']
-            errIq.send()
+            errIq.send(block=False)
 
             
         
