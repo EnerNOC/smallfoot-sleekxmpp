@@ -113,7 +113,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
         if sid is None:
             sid = xep_0096.generateSid()
             
-        iq = self.send_oob(to, kwargs["url"], sid=sid)
+        iq = self.send_oob(to, kwargs["url"], sid=sid, desc=kwargs.get("desc"))
         self.streamSessions[iq["id"]] = {"iq":iq["id"], "url":kwargs["url"], "sid":sid}
     
     def getSessionStatus(self, sid):
