@@ -142,10 +142,20 @@ class XEP_0066(xep_0096.FileTransferProtocol):
 
     def cancelSend(self, sid):
         '''
-        You can't really cancel an oob file transfter after you send the request....
-        Simply passing for now.
+        Used for if device goes offline so don't have to wait for timeout
         '''
-        pass
+        found = None
+        for session in self.streamSessions.iteritems():
+            item = session[1]
+            if item["sid"] == sid:
+                found = item
+
+        if found is not None:
+            log.debug( "xep-0066 transaction %s has been canceled", str(found["iq"]) )
+
+            del self.streamSessions[found["iq"]]
+            self.fileFinishedSending(found["sid"], False)
+
 
     def register_url_handler(self, jid=None, handler=None):
         """
@@ -245,10 +255,10 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             iq['oob_transfer']['url'], iq['from']))
         found_sid = self.streamSessions[iq["id"]]
 
-        try:
-            self.xmpp.unschedule( self._timeout_name(iq["id"]) )
-        except:
-            log.debug( "Unschedule of xep-0066 transaction %s failed", iq["id"] )
+#        try:
+#            self.xmpp.unschedule( self._timeout_name(iq["id"]) )
+#        except:
+#            log.debug( "Unschedule of xep-0066 transaction %s failed", iq["id"] )
 
         if found_sid is not None:
             del self.streamSessions[iq["id"]]
@@ -295,6 +305,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
         if acceptTransfer:
             iq_id = iq["id"]
             url = iq['oob_transfer']['url']
+            desc = iq['oob_transfer']['desc']
             self.streamSessions[iq_id] = {"iq": iq_id, "url": url, "sid": sid}
 
             try:
@@ -307,7 +318,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
                 resp_iq.send(block=False)
 
                 #Now that we have the file notify xep_0096 so it can run the checksums.
-                self.fileFinishedReceiving(self.streamSessions[iq_id]['sid'], saveFileAs)
+                self.fileFinishedReceiving(self.streamSessions[iq_id]['sid'], saveFileAs, desc)
                 del self.streamSessions[iq_id]
 
             except urllib2.URLError as ex: # TODO handle HTTP exception

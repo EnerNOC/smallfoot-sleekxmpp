@@ -120,8 +120,11 @@ class FileTransferProtocol(base.base_plugin):
     def cancelSend(self, sid): 
         pass
     
-    def fileFinishedReceiving(self, sid, filename):
-        self.xmpp.event(FileTransferProtocol.FILE_FINISHED_RECEIVING, {'sid': sid, 'filename':filename})
+    def fileFinishedReceiving(self, sid, filename, desc = None):
+        dict = {'sid': sid, 'filename':filename}
+        if desc is not None:
+            dict['desc'] = desc
+        self.xmpp.event(FileTransferProtocol.FILE_FINISHED_RECEIVING, dict)
     
     def fileFinishedSending(self, sid, success):
         self.xmpp.event(FileTransferProtocol.FILE_FINISHED_SENDING, {'sid': sid, 'success':success})        
@@ -283,6 +286,9 @@ class xep_0096(base.base_plugin):
         
     def _receiveCompleteHandler(self, dict):
         xferInfo = self.activeBytestreams.pop(dict['sid'])
+        if 'desc' in dict:
+            desc = dict['desc']
+            xferInfo['desc'] = desc
         if self.closeTransferCallback:
             self.closeTransferCallback(xferInfo)
         
