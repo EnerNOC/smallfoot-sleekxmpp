@@ -27,7 +27,7 @@ DEFAULT_OOB_TIMEOUT = 900 #seconds
 
 class XEP_0066(xep_0096.FileTransferProtocol):
     XMLNS = 'jabber:iq:oob'
-    
+
 
     """
     XEP-0066: Out of Band Data
@@ -59,7 +59,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
 
         self.url_handlers = {'global': self._default_handler,
                              'jid': {}}
-        
+
         self.streamSessions = {}
 
         register_stanza_plugin(Iq, stanza.OOBTransfer)
@@ -78,7 +78,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
                 Callback('OOB Transfer',
                          StanzaPath('iq@type=error/oob_transfer'),
                          self._handle_finished))
-        
+
         self.register_url_handler(handler=self._download_file)
 
         self.http_timeout = self.config.get('timeout',DEFAULT_HTTP_TIMEOUT)
@@ -87,7 +87,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
 
         handlers = []
         if self.ca_certs:
-            handlers.append( https.HTTPSClientAuthHandler( 
+            handlers.append( https.HTTPSClientAuthHandler(
                 ca_certs = self.ca_certs ) )
 
         # This is our HTTP client:
@@ -99,7 +99,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
         if self.xmpp.plugin.get('xep_0030'):
             self.xmpp.plugin['xep_0030'].add_feature(stanza.OOBTransfer.namespace)
             self.xmpp.plugin['xep_0030'].add_feature(stanza.OOB.namespace)
-            
+
 
     def _timeout_name(self, iq_id):
         return 'xep-0066 timeout ' + str(iq_id)
@@ -108,16 +108,16 @@ class XEP_0066(xep_0096.FileTransferProtocol):
         log.debug("About to send file: %s via oob", fileName)
         if not os.path.isfile(fileName):
             raise IOError('file: %s not found' %fileName)
-        
+
         if self.xmpp.fulljid == to:
             raise Exception('Error setting up the stream, can not send file to ourselves %s', self.xmpp.fulljid)
-        
+
         if not self.xmpp.state.ensure('connected'):
             raise Exception('Not connected to a server!')
-        
+
         if sid is None:
             sid = xep_0096.generateSid()
-            
+
         iq = self.send_oob(to, kwargs["url"], sid=sid, desc=kwargs.get("desc"))
         self.streamSessions[iq["id"]] = {"iq":iq["id"], "url":kwargs["url"], "sid":sid}
 
@@ -126,7 +126,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             self.xmpp.schedule(self._timeout_name(iq["id"]), float(self.config.get('oob_timeout', DEFAULT_OOB_TIMEOUT)), self._handle_timeout, repeat=False, args=iq["id"])
         except UniqueKeyConstraint:
             log.debug( "xep-0066 timeout already set for %s", str(iq["id"]) )
-    
+
     def getSessionStatus(self, sid):
         '''
         Returns the status of the transfer specified by the sid.  If the session
@@ -136,17 +136,17 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             if session["sid"] == sid:
                 return session
         return None
-    
+
     def getSessionStatusAll(self):
         return self.streamSessions.values()
-    
-    def cancelSend(self, sid): 
+
+    def cancelSend(self, sid):
         '''
         You can't really cancel an oob file transfter after you send the request....
         Simply passing for now.
         '''
-        pass        
-    
+        pass
+
     def register_url_handler(self, jid=None, handler=None):
         """
         Register a handler to process download requests, either for all
@@ -233,7 +233,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
         log.debug('Received out-of-band data request for %s from %s:' % (
             iq['oob_transfer']['url'], iq['from']))
         self._run_url_handler(iq)
-        
+
     def _handle_finished(self, iq):
         """
         Handle receiving an out-of-band transfer request.
@@ -252,9 +252,9 @@ class XEP_0066(xep_0096.FileTransferProtocol):
 
         if found_sid is not None:
             del self.streamSessions[iq["id"]]
-            if iq["type"].lower == "error":
+            if iq["type"].lower() == "error":
                 self.fileFinishedSending(found_sid, False)
-            elif  iq["type"].lower == "result":
+            elif  iq["type"].lower() == "result":
                 self.fileFinishedSending(found_sid, True)
 
     def _handle_timeout(self, iq_id):
@@ -266,7 +266,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
         """
         log.debug( "xep-0066 transaction %s has timed out", str(iq_id) )
         found_sid = self.streamSessions[iq_id]
-        
+
         if found_sid is not None:
             del self.streamSessions[iq_id]
             self.fileFinishedSending(found_sid["sid"], False)
@@ -274,7 +274,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
     def _download_file(self, iq):
         '''
         Download the file and notify xep-0096 we are finished.
-        '''  
+        '''
         #Check to see if the file transfer should be accepted
         sid = iq['oob_transfer']['sid']
         acceptTransfer = False
@@ -282,21 +282,21 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             acceptTransfer = self.acceptTransferCallback(sid=sid)
         else:
             acceptTransfer = False
-                
+
         #Ask where to save the file if the callback is present
         saveFileAs = "/dev/null"
         if self.fileNameCallback:
             saveFileAs = self.fileNameCallback(sid=sid)
-            
+
         #Do not accept a transfer from ourselves
         if self.xmpp.fulljid == iq['from']:
             acceptTransfer = False
-        
+
         if acceptTransfer:
             iq_id = iq["id"]
             url = iq['oob_transfer']['url']
             self.streamSessions[iq_id] = {"iq": iq_id, "url": url, "sid": sid}
-            
+
             try:
                 self.http_get(url, saveFileAs)
                 #send the result iq to let the initiator know this client has finished the download
@@ -330,8 +330,8 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             errIq['oob_transfer']['sid'] = iq['oob_transfer']['sid']
             errIq.send(block=False)
 
-            
-        
+
+
     def http_get(self,url, dest):
         with open(dest,'w') as outfile:
             resp = self.http.open(url, timeout=self.http_timeout)
