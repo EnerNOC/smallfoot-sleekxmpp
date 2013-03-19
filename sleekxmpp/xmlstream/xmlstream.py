@@ -698,6 +698,15 @@ class XMLStream(object):
         self.scheduler.add(name, seconds, callback, args, kwargs,
                            repeat, qpointer=self.event_queue)
 
+    def unschedule(self, name):
+        """
+        Remove a scheduled function
+
+        Arguments:
+            name     -- A unique name for the scheduled callback.
+        """
+        self.scheduler.remove(name)
+
     def incoming_filter(self, xml):
         """
         Filter incoming XML objects before they are processed.

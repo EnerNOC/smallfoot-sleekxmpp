@@ -15,6 +15,7 @@ from sleekxmpp.exceptions import XMPPError
 from sleekxmpp.xmlstream import register_stanza_plugin
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
+from sleekxmpp.xmlstream.scheduler import UniqueKeyConstraint
 from sleekxmpp.plugins.xep_0066 import stanza
 import sleekxmpp.plugins.xep_0096 as xep_0096
 from sleekxmpp.thirdparty import https
@@ -22,6 +23,7 @@ from sleekxmpp.thirdparty import https
 log = logging.getLogger(__name__)
 
 DEFAULT_HTTP_TIMEOUT = 20 #seconds
+DEFAULT_OOB_TIMEOUT = 900 #seconds
 
 class XEP_0066(xep_0096.FileTransferProtocol):
     XMLNS = 'jabber:iq:oob'
@@ -98,7 +100,10 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             self.xmpp.plugin['xep_0030'].add_feature(stanza.OOBTransfer.namespace)
             self.xmpp.plugin['xep_0030'].add_feature(stanza.OOB.namespace)
             
-            
+
+    def _timeout_name(self, iq_id):
+        return 'xep-0066 timeout ' + str(iq_id)
+
     def sendFile(self, fileName, to, threaded=True, sid=None, **kwargs):
         log.debug("About to send file: %s via oob", fileName)
         if not os.path.isfile(fileName):
@@ -115,6 +120,12 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             
         iq = self.send_oob(to, kwargs["url"], sid=sid, desc=kwargs.get("desc"))
         self.streamSessions[iq["id"]] = {"iq":iq["id"], "url":kwargs["url"], "sid":sid}
+
+        # Set timeout
+        try:
+            self.xmpp.schedule(self._timeout_name(iq["id"]), float(self.config.get('oob_timeout', DEFAULT_OOB_TIMEOUT)), self._handle_timeout, repeat=False, args=iq["id"])
+        except UniqueKeyConstraint:
+            log.debug( "xep-0066 timeout already set for %s", str(iq["id"]) )
     
     def getSessionStatus(self, sid):
         '''
@@ -233,14 +244,33 @@ class XEP_0066(xep_0096.FileTransferProtocol):
         log.debug('Received out-of-band data result for %s from %s:' % (
             iq['oob_transfer']['url'], iq['from']))
         found_sid = self.streamSessions[iq["id"]]
-        
+
+        try:
+            self.xmpp.unschedule( self._timeout_name(iq["id"]) )
+        except:
+            log.debug( "Unschedule of xep-0066 transaction %s failed", iq["id"] )
+
         if found_sid is not None:
             del self.streamSessions[iq["id"]]
             if iq["type"].lower == "error":
                 self.fileFinishedSending(found_sid, False)
             elif  iq["type"].lower == "result":
                 self.fileFinishedSending(found_sid, True)
-             
+
+    def _handle_timeout(self, iq_id):
+        """
+        Handle timeout of an out-of-band transaction
+
+        Arguments:
+           iq_id -- The id associated with an OOB request iq
+        """
+        log.debug( "xep-0066 transaction %s has timed out", str(iq_id) )
+        found_sid = self.streamSessions[iq_id]
+        
+        if found_sid is not None:
+            del self.streamSessions[iq_id]
+            self.fileFinishedSending(found_sid["sid"], False)
+
     def _download_file(self, iq):
         '''
         Download the file and notify xep-0096 we are finished.
