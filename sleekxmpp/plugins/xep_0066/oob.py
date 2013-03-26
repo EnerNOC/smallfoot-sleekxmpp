@@ -25,6 +25,7 @@ log = logging.getLogger(__name__)
 DEFAULT_HTTP_TIMEOUT = 20 #seconds
 DEFAULT_OOB_TIMEOUT = 900 #seconds
 
+
 class XEP_0066(xep_0096.FileTransferProtocol):
     XMLNS = 'jabber:iq:oob'
 
@@ -322,7 +323,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
                 del self.streamSessions[iq_id]
 
             except urllib2.URLError as ex: # TODO handle HTTP exception
-                log.warn('Error downloading file', ex)
+                log.exception('Error downloading file')
                 # TODO send failure response
                 errIq = self.xmpp.makeIqError(id=iq_id, condition='item-not-found')
                 errIq['to'] = iq['from']
