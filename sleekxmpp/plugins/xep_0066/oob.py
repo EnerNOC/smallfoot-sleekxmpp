@@ -154,8 +154,16 @@ class XEP_0066(xep_0096.FileTransferProtocol):
         if found is not None:
             log.debug( "xep-0066 transaction %s has been canceled", str(found["iq"]) )
 
-            del self.streamSessions[found["iq"]]
-            self.fileFinishedSending(found["sid"], False)
+            try:
+                del self.streamSessions[found["iq"]]
+                self.fileFinishedSending(found["sid"], False)
+            except:
+                log.debug("Failed to cancel send for %s", found["iq"])
+
+            try:
+                self.xmpp.unschedule( self._timeout_name(found["iq"]) )
+            except:
+                log.debug( "Unschedule of xep-0066 transaction %s failed", found["iq"] )
 
 
     def register_url_handler(self, jid=None, handler=None):
