@@ -124,7 +124,7 @@ class XEP_0066(xep_0096.FileTransferProtocol):
 
         # Set timeout
         try:
-            self.xmpp.schedule(self._timeout_name(iq["id"]), float(self.config.get('oob_timeout', DEFAULT_OOB_TIMEOUT)), self._handle_timeout, repeat=False, args=iq["id"])
+            self.xmpp.schedule(self._timeout_name(iq["id"]), float(self.config.get('oob_timeout', DEFAULT_OOB_TIMEOUT)), self._handle_timeout, repeat=False, args=(iq["id"],) )
         except UniqueKeyConstraint:
             log.debug( "xep-0066 timeout already set for %s", str(iq["id"]) )
 
@@ -256,25 +256,26 @@ class XEP_0066(xep_0096.FileTransferProtocol):
             iq['oob_transfer']['url'], iq['from']))
         found_sid = self.streamSessions[iq["id"]]
 
-#        try:
-#            self.xmpp.unschedule( self._timeout_name(iq["id"]) )
-#        except:
-#            log.debug( "Unschedule of xep-0066 transaction %s failed", iq["id"] )
+        try:
+            self.xmpp.unschedule( self._timeout_name(iq["id"]) )
+        except:
+            log.debug( "Unschedule of xep-0066 transaction %s failed", iq["id"] )
 
         if found_sid is not None:
             del self.streamSessions[iq["id"]]
             if iq["type"].lower() == "error":
-                self.fileFinishedSending(found_sid, False)
+                self.fileFinishedSending(found_sid["sid"], False)
             elif  iq["type"].lower() == "result":
-                self.fileFinishedSending(found_sid, True)
+                self.fileFinishedSending(found_sid["sid"], True)
 
-    def _handle_timeout(self, iq_id):
+    def _handle_timeout(self, *args):
         """
         Handle timeout of an out-of-band transaction
 
         Arguments:
            iq_id -- The id associated with an OOB request iq
         """
+        iq_id = ''.join(args)
         log.debug( "xep-0066 transaction %s has timed out", str(iq_id) )
         found_sid = self.streamSessions[iq_id]
 
