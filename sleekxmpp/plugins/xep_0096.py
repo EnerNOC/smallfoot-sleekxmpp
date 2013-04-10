@@ -274,7 +274,7 @@ class xep_0096(base.base_plugin):
             #Figure out which protocol to use
             #if there is no preferred protocol pop a matching 
             protocolNS = None
-            if self.preferredProtocolNS:
+            if self.preferredProtocolNS and self.preferredProtocolNS in matchingProtocols:
                 protocolNS = self.preferredProtocolNS
             else:  
                 protocolNS = matchingProtocols.pop()
