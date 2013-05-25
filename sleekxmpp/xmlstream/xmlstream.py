@@ -380,6 +380,10 @@ class XMLStream(object):
             error_msg = "Could not connect to %s:%s. Socket Error #%s: %s"
             log.error(error_msg % (address[0], address[1],
                                        serr.errno, serr.strerror))
+            '''
+            Fire the connection failure event here!
+            '''
+            self.event("connect_fail", direct=True)
             time.sleep(1)
             return False
 
