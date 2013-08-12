@@ -329,7 +329,6 @@ class XEP_0066(xep_0096.FileTransferProtocol):
 
                 #Now that we have the file notify xep_0096 so it can run the checksums.
                 self.fileFinishedReceiving(self.streamSessions[iq_id]['sid'], saveFileAs, desc)
-                del self.streamSessions[iq_id]
 
             except urllib2.URLError as ex: # TODO handle HTTP exception
                 log.exception('Error downloading file')
@@ -341,6 +340,9 @@ class XEP_0066(xep_0096.FileTransferProtocol):
                 errIq['oob_transfer']['url'] = iq['oob_transfer']['url']
                 errIq['oob_transfer']['sid'] = iq['oob_transfer']['sid']
                 errIq.send(block=False)
+
+            finally:
+                del self.streamSessions[iq_id]
 
         else:
             #failed to download, send back an error iq
