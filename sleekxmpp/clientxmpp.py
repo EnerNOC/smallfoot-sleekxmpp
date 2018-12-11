@@ -54,7 +54,7 @@ class ClientXMPP(BaseXMPP):
     """
 
     def __init__(self, jid, password, ssl=False, plugin_config={},
-                 plugin_whitelist=[], escape_quotes=True):
+                 plugin_whitelist=[], escape_quotes=True, connect_sync_callback=None):
         """
         Create a new SleekXMPP client.
 
@@ -67,7 +67,7 @@ class ClientXMPP(BaseXMPP):
                                 when calling register_plugins.
             escape_quotes    -- Deprecated.
         """
-        BaseXMPP.__init__(self, 'jabber:client')
+        BaseXMPP.__init__(self, 'jabber:client', connect_sync_callback=connect_sync_callback)
 
         # To comply with PEP8, method names now use underscores.
         # Deprecated method names are re-mapped for backwards compatibility.
@@ -170,6 +170,7 @@ class ClientXMPP(BaseXMPP):
         Arguments:
             address -- A tuple containing the server's host and port.
         """
+
         self.session_started_event.clear()
         if not address or len(address) < 2 and not self.srv_support:
             log.debug("Did not supply (address, port) to connect" + \

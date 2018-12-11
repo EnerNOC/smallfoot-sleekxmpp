@@ -151,7 +151,7 @@ class XMLStream(object):
                                 the stream.
     """
 
-    def __init__(self, socket=None, host='', port=0):
+    def __init__(self, socket=None, host='', port=0, connect_sync_callback=None):
         """
         Establish a new XML stream.
 
@@ -224,7 +224,9 @@ class XMLStream(object):
 
         self.auto_reconnect = True
         self.is_client = False
-        
+        self._connect_sync_callback = connect_sync_callback
+
+
     def _handle_kill(self, signum, frame):
         """
         Capture kill event and disconnect cleanly after first
@@ -267,6 +269,11 @@ class XMLStream(object):
             reattempt -- Flag indicating if the socket should reconnect
                          after disconnections.
         """
+
+        if self._connect_sync_callback is not None:
+            logging.debug("Calling connect_sync_callback")
+            self._connect_sync_callback()
+
         if host and port:
             self.address = (host, int(port))
 

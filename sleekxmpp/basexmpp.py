@@ -78,7 +78,7 @@ class BaseXMPP(XMLStream):
        send_presence_subscribe -- Send a subscription request.
     """
 
-    def __init__(self, default_ns='jabber:client'):
+    def __init__(self, default_ns='jabber:client', connect_sync_callback=None):
         """
         Adapt an XML stream for use with XMPP.
 
@@ -86,7 +86,7 @@ class BaseXMPP(XMLStream):
             default_ns -- Ensure that the correct default XML namespace
                           is used during initialization.
         """
-        XMLStream.__init__(self)
+        XMLStream.__init__(self, connect_sync_callback=connect_sync_callback)
 
         # To comply with PEP8, method names now use underscores.
         # Deprecated method names are re-mapped for backwards compatibility.
