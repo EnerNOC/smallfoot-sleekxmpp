@@ -358,8 +358,5 @@ class XEP_0066(xep_0096.FileTransferProtocol):
     def http_get(self,url, dest):
         with open(dest,'w') as outfile:
             resp = self.http.open(url, timeout=self.http_timeout)
-            xfrb = resp.read(2048)
-            while len(xfrb):
-                outfile.write(xfrb)
-                xfrb = resp.read(2048)
+            outfile.write( resp.read() )
             logging.debug("OOB saved %s to %s", url, dest)
